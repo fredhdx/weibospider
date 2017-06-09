@@ -55,6 +55,8 @@ class KeyWords(Base):
     id = Column(INTEGER, primary_key=True, autoincrement=True)
     keyword = Column(String, unique=True)
     enable = Column(INTEGER, default=1)
+    start_time = Column(String)
+    end_time = Column(String)
 
 
 class WeiboData(Base):

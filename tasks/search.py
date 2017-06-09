@@ -1,5 +1,7 @@
 # coding:utf-8
 from urllib import parse as url_parse
+
+from db.models import KeyWords
 from logger.log import crawler
 from tasks.workers import app
 from page_get.basic import get_page
@@ -8,9 +10,11 @@ from page_parse import search as parse_search
 from db.search_words import get_search_keywords
 from db.keywords_wbdata import insert_keyword_wbid
 from db.wb_data import insert_weibo_data, get_wb_by_mid
+from db.basic_db import db_session
 
 # 只抓取原创微博，默认是按照时间进行排序，如果只抓首页，那么就不需要登录
-url = 'http://s.weibo.com/weibo/{}&xsort=hot&suball=1&page={}'
+url = 'http://s.weibo.com/weibo/{}&typeall=1&suball=1&page={}'
+time_param = '&timescope=custom:{}'
 limit = get_max_search_page() + 1
 
 
@@ -20,7 +24,14 @@ def search_keyword(keyword, keyword_id):
     encode_keyword = url_parse.quote(keyword)
     while cur_page < limit:
         cur_url = url.format(encode_keyword, cur_page)
-
+        # 检查是否有日期要求
+        db_keyword = db_session.query(KeyWords).filter(KeyWords.id == keyword_id).first()
+        if db_keyword:
+            if db_keyword.start_time:
+                tt = db_keyword.start_time
+                if db_keyword.end_time:
+                    tt += ':' + db_keyword.end_time
+                cur_url += time_param.format(tt)
         search_page = get_page(cur_url)
         if not search_page:
             crawler.warning('本次并没获取到关键词{}的相关微博,该页面源码是{}'.format(keyword, search_page))
@@ -30,9 +41,9 @@ def search_keyword(keyword, keyword_id):
         # 先判断数据库里是否存在相关的微博，如果是已有的，那就说明是已经抓取的微博(因为结果默认按时间排序)，就退出循环
         for wb_data in search_list:
             rs = get_wb_by_mid(wb_data.weibo_id)
-            #if rs:
-                 #crawler.info('关键词{}本次搜索更新的微博已经获取完成'.format(keyword))
-                 # return
+            # if rs:
+            # crawler.info('关键词{}本次搜索更新的微博已经获取完成'.format(keyword))
+            # return
             insert_weibo_data(wb_data)
             insert_keyword_wbid(keyword_id, wb_data.weibo_id)
             # 这里暂时使用网络调用而非本地调用，权衡两种方法的好处

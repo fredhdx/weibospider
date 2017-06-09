@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 from db.models import WeiboData
 from decorators.decorator import parse_decorator
 from logger.log import parser
+from datetime import datetime
+import dateparser
 
 user_pattern = r'id=(\d+)&u'
 
@@ -55,8 +57,17 @@ def get_weibo_info(each, html):
 
         try:
             feed_action = each.find(attrs={'class': 'feed_action'})
-            wb_data.create_time = each.find(attrs={'node-type': 'feed_list_item_date'})['title']
-
+            s_time = each.find(attrs={'node-type': 'feed_list_item_date'}).txt
+            create_time = s_time
+            if '月' in create_time and '年' not in create_time:
+                create_time = "{}年{}".format(datetime.now().year, create_time)
+            if '今天' in create_time:
+                create_time = create_time.replace('今天', '')
+            create_time = dateparser.parse(create_time)
+            if create_time:
+                wb_data.create_time = create_time.strftime("%Y-%m-%d %H:%M")
+            else:
+                parser.error('解析日期出错,原始日期格式是:{}'.format(s_time))
         except Exception as why:
             parser.error('解析feed_action出错,出错原因:{},页面源码是{}'.format(why, html))
             wb_data.device = ''
@@ -111,7 +122,3 @@ def get_search_info(html):
         if wb_data is not None:
             search_list.append(wb_data)
     return search_list
-
-
-
-

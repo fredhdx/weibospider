@@ -112,6 +112,7 @@ class Cookies(object):
         login_time = datetime.datetime.fromtimestamp(cookies['loginTime'])
         if datetime.datetime.now() - login_time > datetime.timedelta(hours=20):
             # 删除过期cookies
+            crawler.warning('一个账号已过期')
             return True
         return False
 
