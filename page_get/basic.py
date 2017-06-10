@@ -22,8 +22,8 @@ excp_interal = get_excp_interal()
 # 每次抓取都从redis中随机取一个cookie以降低被封号的危险，但是还没验证不同ip对账号的影响
 
 
-# @timeout(200)
-# @timeout_decorator
+@timeout(200)
+@timeout_decorator
 def get_page(url, user_verify=True, need_login=True):
     """
     :param url: 待抓取url
@@ -37,18 +37,27 @@ def get_page(url, user_verify=True, need_login=True):
     while count < max_retries:
 
         if need_login:
-            # 每次重试的时候都换cookies,并且和上次不同
-            crawler.info('阻塞获取cookies')
-            try:
-                name_cookies = Cookies.fetch_cookies()
-            except Exception as e:
-                print(e)
-            crawler.info('获取cookies成功')
 
+            # 通过队列获取账号的cookie
+            name_cookies = Cookies.fetch_cookies()
+            
             if name_cookies is None:
                 crawler.warning('cookie池中不存在cookie，正在检查是否有可用账号')
-                # 这里建议不要尝试登陆账号，因为账号登陆有成本和IP限制
+                rs = get_login_info()
 
+                # 选择状态正常的账号进行登录，账号都不可用就停掉celery worker
+                if len(rs) == 0:
+                    crawler.error('账号均不可用，请检查账号健康状况')
+                    # 杀死所有关于celery的进程
+                    if 'win32' in sys.platform:
+                        os.popen('taskkill /F /IM "celery*"')
+                    else:
+                        os.popen('pkill -f "celery"')
+                else:
+                    crawler.info('重新获取cookie中...')
+                    login.excute_login_task()
+                    time.sleep(10)
+                    continue
 
         try:
             if need_login:

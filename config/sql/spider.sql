@@ -40,6 +40,7 @@ create table weibo.login_info
 comment '微博登录账号数据表'
 ;
 
+
 create table weibo.seed_ids
 (
 	id int not null auto_increment

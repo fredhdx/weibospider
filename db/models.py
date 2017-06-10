@@ -73,6 +73,7 @@ class WeiboData(Base):
     device = Column(String(200), default='')
     weibo_url = Column(String(300))
     create_time = Column(String(200))
+    raw_time = Column(String(200))
     comment_crawled = Column(INTEGER, default=0)
     repost_crawled = Column(INTEGER, default=0)
 

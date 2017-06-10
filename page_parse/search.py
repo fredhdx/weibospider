@@ -28,6 +28,16 @@ def _search_page_parse(html):
                 return m2.group(1).encode('utf-8', 'ignore').decode('unicode-escape', 'ignore').replace('\\', '')
     return ''
 
+def get_feed_info(feed_infos,goal):
+    info_num = None
+    for info in feed_infos:
+        if goal in info.text:
+            info_num = info.text.replace(goal, '')
+            break
+    if info_num is None:
+        parser.error('解析出现意外模板:{}'.format(feed_infos))
+    return int(info_num)
+
 
 @parse_decorator(5)
 def get_weibo_info(each, html):
@@ -57,7 +67,7 @@ def get_weibo_info(each, html):
 
         try:
             feed_action = each.find(attrs={'class': 'feed_action'})
-            s_time = each.find(attrs={'node-type': 'feed_list_item_date'}).txt
+            s_time = each.find(attrs={'node-type': 'feed_list_item_date'}).text
             create_time = s_time
             if '月' in create_time and '年' not in create_time:
                 create_time = "{}年{}".format(datetime.now().year, create_time)
@@ -68,17 +78,21 @@ def get_weibo_info(each, html):
                 wb_data.create_time = create_time.strftime("%Y-%m-%d %H:%M")
             else:
                 parser.error('解析日期出错,原始日期格式是:{}'.format(s_time))
+            wb_data.raw_time = s_time
         except Exception as why:
             parser.error('解析feed_action出错,出错原因:{},页面源码是{}'.format(why, html))
             wb_data.device = ''
 
         else:
+            feed_infos = feed_action.find_all('li')
             try:
-                wb_data.repost_num = int(feed_action.find(attrs={'action-type': 'feed_list_forward'}).find('em').text)
+                wb_data.repost_num = get_feed_info(feed_infos,'转发')
+                # wb_data.repost_num = int(feed_action.find(attrs={'action-type': 'feed_list_forward'}).find('em').text)
             except (AttributeError, ValueError):
                 wb_data.repost_num = 0
             try:
-                wb_data.comment_num = int(feed_action.find(attrs={'action-type': 'feed_list_comment'}).find('em').text)
+                wb_data.comment_num = get_feed_info(feed_infos,'评论')
+                # wb_data.comment_num = int(feed_action.find(attrs={'action-type': 'feed_list_comment'}).find('em').text)
             except (AttributeError, ValueError):
                 wb_data.comment_num = 0
             try:

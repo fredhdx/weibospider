@@ -58,13 +58,14 @@ app.conf.update(
         },
     },
     CELERY_QUEUES=(
-        Queue('login_queue', exchange=Exchange('login', type='direct'), routing_key='for_login'),
+        Queue('login_queue', exchange=Exchange('login_queue', type='direct'), routing_key='for_login'),
 
         Queue('user_crawler', exchange=Exchange('user_info', type='direct'), routing_key='for_user_info'),
         Queue('user_profile_crawler', exchange=Exchange('user_profile_info', type='direct'),
               routing_key='for_user_profile_info'),
 
         Queue('search_crawler', exchange=Exchange('search_info', type='direct'), routing_key='for_search_info'),
+
         Queue('fans_followers', exchange=Exchange('fans_followers', type='direct'), routing_key='for_fans_followers'),
 
         Queue('home_crawler', exchange=Exchange('home_crawler', type='direct'), routing_key='home_info'),
@@ -77,5 +78,6 @@ app.conf.update(
         Queue('repost_crawler', exchange=Exchange('repost_crawler', type='direct'), routing_key='repost_info'),
         Queue('repost_page_crawler', exchange=Exchange('repost_page_crawler', type='direct'),
               routing_key='repost_page_info'),
-    )
+    ),
+
 )

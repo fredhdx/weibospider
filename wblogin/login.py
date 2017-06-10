@@ -18,8 +18,7 @@ from logger.log import crawler, other
 from db.login_info import freeze_account
 
 
-# todo 这里如果是多个账号并发登录，那么验证码可能会被覆盖思考一种对应的方式
-verify_code_path = './{}.png'
+verify_code_path = './{}{}.png'
 index_url = "http://weibo.com/login.php"
 yundama_username = conf.get_code_username()
 yundama_password = conf.get_code_password()
@@ -32,13 +31,14 @@ def get_pincode_url(pcid):
     return pincode_url
 
 
-def get_img(url, name):
+def get_img(url, name, retry_count):
     """
     :param url: 验证码url
     :param name: 登录名，这里用登录名作为验证码的文件名，是为了防止并发登录的时候同名验证码图片被覆盖
+    :param retry_count: 登录重试次数
     :return: 
     """
-    pincode_name = verify_code_path.format(name)
+    pincode_name = verify_code_path.format(name, retry_count)
     resp = requests.get(url, headers=headers, stream=True)
     with open(pincode_name, 'wb') as f:
         for chunk in resp.iter_content(1000):
@@ -98,6 +98,10 @@ def get_redirect(name, data, post_url, session):
         crawler.error('输入的验证码不正确')
         return 'pinerror'
 
+    if 'retcode=4049' in login_loop:
+        crawler.warning('账号{}登录需要验证码'.format(name))
+        return 'login_need_pincode'
+
     if '正在登录' or 'Signing in' in login_loop:
         pa = r'location\.replace\([\'"](.*?)[\'"]\)'
         return re.findall(pa, login_loop)[0]
@@ -105,15 +109,51 @@ def get_redirect(name, data, post_url, session):
         return ''
 
 
-def do_login(name, password, need_verify):
-    session = requests.Session()
-    su = get_encodename(name)
+def login_no_pincode(name, password, session, server_data):
+    post_url = 'http://login.sina.com.cn/sso/login.php?client=ssologin.js(v1.4.18)'
 
-    sever_data = get_server_data(su, session)
-    servertime = sever_data["servertime"]
-    nonce = sever_data['nonce']
-    rsakv = sever_data["rsakv"]
-    pubkey = sever_data["pubkey"]
+    servertime = server_data["servertime"]
+    nonce = server_data['nonce']
+    rsakv = server_data["rsakv"]
+    pubkey = server_data["pubkey"]
+    sp = get_password(password, servertime, nonce, pubkey)
+
+    # 提交的数据可以根据抓包获得
+    data = {
+        'encoding': 'UTF-8',
+        'entry': 'weibo',
+        'from': '',
+        'gateway': '1',
+        'nonce': nonce,
+        'pagerefer': "",
+        'prelt': 67,
+        'pwencode': 'rsa2',
+        "returntype": "META",
+        'rsakv': rsakv,
+        'savestate': '7',
+        'servertime': servertime,
+        'service': 'miniblog',
+        'sp': sp,
+        'sr': '1920*1080',
+        'su': get_encodename(name),
+        'useticket': '1',
+        'vsnf': '1',
+        'url': 'http://weibo.com/ajaxlogin.php?framelogin=1&callback=parent.sinaSSOController.feedBackUrlCallBack'
+    }
+
+    rs = get_redirect(name, data, post_url, session)
+
+    return rs, None, '', session
+
+
+def login_by_pincode(name, password, session, server_data, retry_count):
+    post_url = 'http://login.sina.com.cn/sso/login.php?client=ssologin.js(v1.4.18)'
+
+    servertime = server_data["servertime"]
+    nonce = server_data['nonce']
+    rsakv = server_data["rsakv"]
+    pubkey = server_data["pubkey"]
+    pcid = server_data['pcid']
 
     sp = get_password(password, servertime, nonce, pubkey)
 
@@ -134,44 +174,64 @@ def do_login(name, password, need_verify):
         'service': 'miniblog',
         'sp': sp,
         'sr': '1920*1080',
-        'su': su,
+        'su': get_encodename(name),
         'useticket': '1',
         'vsnf': '1',
-        'url': 'http://weibo.com/ajaxlogin.php?framelogin=1&callback=parent.sinaSSOController.feedBackUrlCallBack'
+        'url': 'http://weibo.com/ajaxlogin.php?framelogin=1&callback=parent.sinaSSOController.feedBackUrlCallBack',
+        'pcid': pcid
     }
 
-    yundama_obj = None
-    cid = ''
+    if not yundama_username:
+        raise Exception('由于本次登录需要验证码，请配置顶部位置云打码的用户名{}和及相关密码'.format(yundama_username))
+    img_url = get_pincode_url(pcid)
+    pincode_name = get_img(img_url, name, retry_count)
+    verify_code, yundama_obj, cid = code_verification.code_verificate(yundama_username, yundama_password,
+                                                                      pincode_name)
+    data['door'] = verify_code
+    rs = get_redirect(name, data, post_url, session)
 
-    # 你也可以改为手动填写验证码
-    # 之所以会有need_verify这个字段，是因为某些账号虽然可能不正常，但是它在预登陆的时候会返回pincode=0,而实际上却是需要验证码的
-    # 所以这里通过用户自己控制
-    if need_verify:
-        if not yundama_username:
-            raise Exception('由于本次登录需要验证码，请配置顶部位置云打码的用户名{}和及相关密码'.format(yundama_username))
-        pcid = sever_data['pcid']
-        data['pcid'] = pcid
-        img_url = get_pincode_url(pcid)
-        pincode_name = get_img(img_url, name)
-        verify_code, yundama_obj, cid = code_verification.code_verificate(yundama_username, yundama_password,
-                                                                          pincode_name)
-        data['door'] = verify_code
+    os.remove(pincode_name)
+    return rs, yundama_obj, cid, session
 
-        os.remove(pincode_name)
 
-    post_url = 'http://login.sina.com.cn/sso/login.php?client=ssologin.js(v1.4.18)'
+def login_retry(name, password, session, ydm_obj, cid, rs='pinerror', retry_count=0):
+    while rs == 'pinerror':
+        ydm_obj.report_error(cid)
+        retry_count += 1
+        session = requests.Session()
+        su = get_encodename(name)
+        server_data = get_server_data(su, session)
+        rs, yundama_obj, cid, session = login_by_pincode(name, password, session, server_data, retry_count)
+    return rs, ydm_obj, cid, session
 
-    url = get_redirect(name, data, post_url, session)
-    return url, yundama_obj, cid, session
+
+def do_login(name, password):
+    session = requests.Session()
+    su = get_encodename(name)
+    server_data = get_server_data(su, session)
+
+    if server_data['showpin']:
+        rs, yundama_obj, cid, session = login_by_pincode(name, password, session, server_data, 0)
+        if rs == 'pinerror':
+            rs, yundama_obj, cid, session = login_retry(name, password, session, yundama_obj, cid)
+
+    else:
+        rs, yundama_obj, cid, session = login_no_pincode(name, password, session, server_data)
+        if rs == 'login_need_pincode':
+            session = requests.Session()
+            su = get_encodename(name)
+            server_data = get_server_data(su, session)
+            rs, yundama_obj, cid, session = login_by_pincode(name, password, session, server_data, 0)
+
+            if rs == 'pinerror':
+                rs, yundama_obj, cid, session = login_retry(name, password, session, yundama_obj, cid)
+
+    return rs, yundama_obj, cid, session
 
 
 # 获取成功登陆返回的信息,包括用户id等重要信息,返回登陆session,存储cookies到redis
-def get_session(name, password, need_verify):
-    url, yundama_obj, cid, session = do_login(name, password, need_verify)
-    # 打码出错处理
-    while url == 'pinerror' and yundama_obj is not None:
-        yundama_obj.report_error(cid)
-        url, yundama_obj, cid, session = do_login(name, password, need_verify)
+def get_session(name, password):
+    url, yundama_obj, cid, session = do_login(name, password)
 
     if url != '':
         rs_cont = session.get(url, headers=headers)
@@ -179,28 +239,18 @@ def get_session(name, password, need_verify):
 
         u_pattern = r'"uniqueid":"(.*)",'
         m = re.search(u_pattern, login_info)
-        if m:
-            if m.group(1):
-                # 任意验证一个页面看能否访问，使用这个方法验证比较依赖外部条件，但是没找到更好的方式(有的情况下，
-                # 账号存在问题，但是可以访问自己的主页，所以通过自己的主页验证账号是否正常不恰当)
-                check_url = 'http://weibo.com/p/1005051764222885/info?mod=pedit_more'
-                resp = session.get(check_url, headers=headers)
-
-                # 通过实验，目前发现未经过手机验证的账号是救不回来了...
-                if is_403(resp.text):
-                    other.error('账号{}已被冻结'.format(name))
-                    crawler.warning('账号{}已经被冻结'.format(name))
-                    freeze_account(name, 0)
-                    return None
-                other.info('本次登陆账号为:{}'.format(name))
-                Cookies.store_cookies(name, session.cookies.get_dict())
-                return session
-            else:
-                other.error('本次账号{}登陆失败'.format(name))
+        if m and m.group(1):
+            # 访问微博官方账号看是否正常
+            check_url = 'http://weibo.com/2671109275/about'
+            resp = session.get(check_url, headers=headers)
+            # 通过实验，目前发现未经过手机验证的账号是救不回来了...
+            if is_403(resp.text):
+                other.error('账号{}已被冻结'.format(name))
+                freeze_account(name, 0)
                 return None
-        else:
-            other.error('本次账号{}登陆失败'.format(name))
-            return None
-    else:
-        other.error('本次账号{}登陆失败'.format(name))
-        return None
+            other.info('本次登陆账号为:{}'.format(name))
+            Cookies.store_cookies(name, session.cookies.get_dict())
+            return session
+         
+    other.error('本次账号{}登陆失败'.format(name))
+    return None

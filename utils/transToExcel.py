@@ -23,6 +23,8 @@ keys = ['序号',
         '发布时间',
         '转发数',
         '情感值',
+        '点赞数',
+        '回复数',
         '第一层转发',
         '第二层转发',
         '第三层转发',
@@ -136,6 +138,9 @@ def build_one(keyword, wb, ws):
     ws.write(line_num, keyindex['网址'], wb.weibo_url)
     ws.write(line_num, keyindex['发布时间'], wb.create_time)
     ws.write(line_num, keyindex['微博属性'], user.verify_type)
+    ws.write(line_num,keyindex['点赞数'],wb.praise_num)
+    ws.write(line_num, keyindex['恢复数'], wb.comment_num)
+
     # 转转发统计
     ws.write(line_num, keyindex['第一层转发'], percent(lv1, all_repost))
     ws.write(line_num, keyindex['第二层转发'], percent(lv2, all_repost))
