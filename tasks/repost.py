@@ -42,7 +42,7 @@ def crawl_repost_page(mid, uid):
     total_page = repost.get_total_page(first_repost_data[0])
     repost_datas = first_repost_data[1]
 
-    if not repost_datas:
+    if not repost_datas: 
         return
 
     if total_page < limit:
