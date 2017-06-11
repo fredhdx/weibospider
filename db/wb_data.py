@@ -2,7 +2,7 @@
 from sqlalchemy import text
 
 from db.basic_db import db_session
-from db.models import WeiboData, KeywordsWbdata, KeyWords
+from db.models import WeiboData, KeywordsWbdata, KeyWords, WeiboRepost
 from decorators.decorator import db_commit_decorator
 
 
@@ -62,10 +62,10 @@ def get_weibo_repost_not_full_crawled(keyword=None):
         WeiboData.repost_crawled == 0)
 
     for wb in wbdata:
-        # if wb.repost_num > 100:
-        # hasc = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb.weibo_id).count()
-        # if hasc / wb.repost_num < 0.8:
-        yield wb
+        if wb[0].repost_num > 100:
+            has = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb[0].weibo_id).count()
+            if has / wb[0].repost_num < 0.8:
+                yield wb[0]
 
 
 @db_commit_decorator

@@ -78,6 +78,7 @@ class Cookies(object):
     @classmethod
     def delete_cookies(cls, name):
         cls.rd_con.hdel('account', name)
+        cls.rd_con.hdel('cookies_host', name)
         return True
 
     @classmethod
