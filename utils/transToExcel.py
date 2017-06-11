@@ -11,20 +11,17 @@ from db.models import WeiboData, KeyWords, KeywordsWbdata, User, WeiboRepost, We
 import xlwt
 from datetime import datetime
 
-keys = ['序号',
-        '事件名',
-        '事件类型',
-        '微博内容',
+keys = ['事件名',
         '微博名称',
-        '特征',
         '微博属性',
         '粉丝拥有量',
+        '微博等级',
         '网址',
         '发布时间',
         '转发数',
         '情感值',
         '点赞数',
-        '回复数',
+        '评论数',
         '第一层转发',
         '第二层转发',
         '第三层转发',
@@ -42,8 +39,8 @@ for i, k in enumerate(keys):
 for i in range(1, 11):
     count = 6
     keyindex['昵称{}'.format(i)] = user_start + (i - 1) * count + i
-    keyindex['粉丝数{}'.format(i)] = user_start + 1 + (i - 1) * count + i
-    keyindex['认证类型{}'.format(i)] = user_start + 2 + (i - 1) * count + i
+    keyindex['认证类型{}'.format(i)] = user_start + 1 + (i - 1) * count + i
+    keyindex['粉丝数{}'.format(i)] = user_start + 2 + (i - 1) * count + i
     keyindex['微博数{}'.format(i)] = user_start + 3 + (i - 1) * count + i
     keyindex['等级{}'.format(i)] = user_start + 4 + (i - 1) * count + i
     keyindex['转发数{}'.format(i)] = user_start + 5 + (i - 1) * count + i
@@ -53,12 +50,11 @@ user_start = len(keyindex)
 for i in range(1, 11):
     count = 6
     keyindex['c昵称{}'.format(i)] = user_start + (i - 1) * count + i
-    keyindex['c粉丝数{}'.format(i)] = user_start + 1 + (i - 1) * count + i
-    keyindex['c认证类型{}'.format(i)] = user_start + 2 + (i - 1) * count + i
+    keyindex['c认证类型{}'.format(i)] = user_start + 1 + (i - 1) * count + i
+    keyindex['c粉丝数{}'.format(i)] = user_start + 2 + (i - 1) * count + i
     keyindex['c微博数{}'.format(i)] = user_start + 3 + (i - 1) * count + i
     keyindex['c等级{}'.format(i)] = user_start + 4 + (i - 1) * count + i
     # keyindex['次级评论数{}'.format(i)] = user_start + 5 + (i - 1) * count + i
-    keyindex['c内容{}'.format(i)] = user_start + 6 + (i - 1) * count + i
     keyindex['c点赞数{}'.format(i)] = user_start + 5 + (i - 1) * count + i
 
 
@@ -99,7 +95,7 @@ finish_count = 0
 def main():
     workbook = xlwt.Workbook()
     ws = build_init_sheet(workbook.add_sheet('统计'))
-    keywords = db_session.query(KeyWords)  # .filter(KeyWords.keyword == '曼彻斯特爆炸')
+    keywords = db_session.query(KeyWords).filter(KeyWords.keyword == '曼彻斯特爆炸')
     for keyword in keywords:
         for wbid in db_session.query(KeywordsWbdata.wb_id).filter(KeywordsWbdata.keyword_id == keyword.id):
             for wb in db_session.query(WeiboData).filter(WeiboData.weibo_id == wbid[0]):
@@ -130,16 +126,14 @@ def build_one(keyword, wb, ws):
     global line_num
     line_num += 1
     print('{}行开始统计'.format(line_num))
-    ws.write(line_num, keyindex['序号'], line_num)
     ws.write(line_num, keyindex['事件名'], keyword.keyword)
-    ws.write(line_num, keyindex['微博内容'], wb.weibo_cont)
     ws.write(line_num, keyindex['微博名称'], user.name)
     ws.write(line_num, keyindex['粉丝拥有量'], user.fans_num)
     ws.write(line_num, keyindex['网址'], wb.weibo_url)
     ws.write(line_num, keyindex['发布时间'], wb.create_time)
     ws.write(line_num, keyindex['微博属性'], user.verify_type)
     ws.write(line_num,keyindex['点赞数'],wb.praise_num)
-    ws.write(line_num, keyindex['恢复数'], wb.comment_num)
+    ws.write(line_num, keyindex['评论数'], wb.comment_num)
 
     # 转转发统计
     ws.write(line_num, keyindex['第一层转发'], percent(lv1, all_repost))
