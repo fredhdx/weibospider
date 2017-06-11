@@ -95,10 +95,15 @@ finish_count = 0
 def main():
     workbook = xlwt.Workbook()
     ws = build_init_sheet(workbook.add_sheet('统计'))
-    keywords = db_session.query(KeyWords).filter(KeyWords.keyword == '法国警察枪杀华人')
+    if len(sys.argv) > 1:
+        arg = sys.argv[1]
+    else:
+        arg = '法国警察枪杀华人'
+    keywords = db_session.query(KeyWords).filter(KeyWords.keyword == arg)
     for keyword in keywords:
         for wbid in db_session.query(KeywordsWbdata.wb_id).filter(KeywordsWbdata.keyword_id == keyword.id):
-            for wb in db_session.query(WeiboData).filter(WeiboData.weibo_id == wbid[0]):
+            for wb in db_session.query(WeiboData).filter(WeiboData.weibo_id == wbid[0]).filter(
+                            WeiboData.repost_num > 100):
                 build_one(keyword, wb, ws)
     workbook.save('result.xls')
 
@@ -108,7 +113,7 @@ def percent(a, b):
 
 
 def build_one(keyword, wb, ws):
-    user = db_session.query(User).filter(User.uid == wb.uid).one()
+    user = get_profile(wb.uid)
     lv2 = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb.weibo_id).filter(
         WeiboRepost.lv == 1).count()
     lv3 = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb.weibo_id).filter(
@@ -132,7 +137,7 @@ def build_one(keyword, wb, ws):
     ws.write(line_num, keyindex['网址'], wb.weibo_url)
     ws.write(line_num, keyindex['发布时间'], wb.create_time)
     ws.write(line_num, keyindex['微博属性'], user.verify_type)
-    ws.write(line_num,keyindex['点赞数'],wb.praise_num)
+    ws.write(line_num, keyindex['点赞数'], wb.praise_num)
     ws.write(line_num, keyindex['评论数'], wb.comment_num)
 
     # 转转发统计
