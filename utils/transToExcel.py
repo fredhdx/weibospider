@@ -98,7 +98,7 @@ def main():
     if len(sys.argv) > 1:
         arg = sys.argv[1]
     else:
-        arg = '法国警察枪杀华人'
+        arg = '乐天 萨德'
     keywords = db_session.query(KeyWords).filter(KeyWords.keyword == arg)
     for keyword in keywords:
         for wbid in db_session.query(KeywordsWbdata.wb_id).filter(KeywordsWbdata.keyword_id == keyword.id):
@@ -178,7 +178,6 @@ def build_one(keyword, wb, ws):
 
         # ws.write(line_num, keyindex['次级评论数{}'.format(i)], keycomment.sub_comment_count)
         ws.write(line_num, keyindex['c点赞数{}'.format(i)], keycomment.like)
-        ws.write(line_num, keyindex['c内容{}'.format(i)], keycomment.comment_cont)
         i += 1
 
     global finish_count
