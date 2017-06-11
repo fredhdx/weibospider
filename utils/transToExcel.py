@@ -95,7 +95,7 @@ finish_count = 0
 def main():
     workbook = xlwt.Workbook()
     ws = build_init_sheet(workbook.add_sheet('统计'))
-    keywords = db_session.query(KeyWords).filter(KeyWords.keyword == '曼彻斯特爆炸')
+    keywords = db_session.query(KeyWords).filter(KeyWords.keyword == '法国警察枪杀华人')
     for keyword in keywords:
         for wbid in db_session.query(KeywordsWbdata.wb_id).filter(KeywordsWbdata.keyword_id == keyword.id):
             for wb in db_session.query(WeiboData).filter(WeiboData.weibo_id == wbid[0]):
