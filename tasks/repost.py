@@ -42,7 +42,7 @@ def crawl_repost_page(mid, uid):
     total_page = repost.get_total_page(first_repost_data[0])
     repost_datas = first_repost_data[1]
 
-    if not repost_datas: 
+    if not repost_datas:
         return
 
     if total_page < limit:
@@ -57,7 +57,7 @@ def crawl_repost_page(mid, uid):
 @app.task(ignore_result=True)
 def excute_repost_task():
     # 以当前微博为源微博进行分析，不向上溯源，如果有同学需要向上溯源，需要自己判断一下该微博是否是根微博
-    weibo_datas = wb_data.get_weibo_repost_not_full_crawled('乐天 萨德')
+    weibo_datas = wb_data.get_weibo_repost_not_full_crawled('法国警察枪杀华人')
     count = 0
     for weibo_data in weibo_datas:
         weibo_data = weibo_data

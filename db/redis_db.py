@@ -50,6 +50,7 @@ class Cookies(object):
 
         while True:
             # 失败则从队列中 阻塞 获取一个新的cookies (不阻塞在账户少的时候，会出现重复登陆的情况，但是这里阻塞之后，原来实现中的尝试登陆代码就无效了,需要的话可以设置超时解决)
+            # 另外阻塞的一个好处是，任务不会在账号出问题的时候被刷没了
             name = cls.rd_con.blpop('account_queue')[1].decode('utf-8')
             if name:
                 j_account = cls.rd_con.hget('account', name)
