@@ -15,7 +15,7 @@ def save_comments(comment_list):
 
 @db_commit_decorator
 def save_comment(comment):
-    cmdinside = db_session.query(WeiboComment).filter(WeiboComment.comment_id == comment).first()
+    cmdinside = db_session.query(WeiboComment).filter(WeiboComment.comment_id == comment.id).first()
     if cmdinside:  # 更新数据
         db_session.delete(cmdinside)
     db_session.add(comment)
