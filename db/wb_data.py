@@ -58,13 +58,12 @@ def get_weibo_repost_not_full_crawled(keyword=None):
             .filter(KeywordsWbdata.wb_id == WeiboData.weibo_id) \
             .filter(KeyWords.id == KeywordsWbdata.keyword_id) \
             .filter(KeyWords.keyword == keyword)
-    wbdata = wbdata.filter(
-        WeiboData.repost_crawled == 0)
+
 
     for wb in wbdata:
         if wb[0].repost_num > 100:
             has = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb[0].weibo_id).count()
-            if has / wb[0].repost_num < 0.8:
+            if has / wb[0].repost_num < 0.6:
                 yield wb[0]
 
 

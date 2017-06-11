@@ -52,11 +52,13 @@ class Cookies(object):
             # 失败则从队列中 阻塞 获取一个新的cookies (不阻塞在账户少的时候，会出现重复登陆的情况，但是这里阻塞之后，原来实现中的尝试登陆代码就无效了,需要的话可以设置超时解决)
             name = cls.rd_con.blpop('account_queue')[1].decode('utf-8')
             if name:
-                j_account = cls.rd_con.hget('account', name).decode('utf-8')
+                j_account = cls.rd_con.hget('account', name)
+
                 if cls.check_cookies_timeout(j_account):
                     cls.delete_cookies(name)
                     continue
                     # 取下一个,删除当前账号
+                j_account = j_account.decode('utf-8')
                 # 为该cookies标记该主机使用
                 hosts = cls.rd_con.hget('cookies_host', name)
                 if not hosts:

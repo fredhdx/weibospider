@@ -21,6 +21,15 @@ excp_interal = get_excp_interal()
 
 # 每次抓取都从redis中随机取一个cookie以降低被封号的危险，但是还没验证不同ip对账号的影响
 
+def check_account_block(resp):
+    """检查账号是否被封"""
+    if 'unfreeze' in resp.url or 'accessdeny' in resp.url or 'userblock' in resp.url:
+        return True
+
+    if 'verifybmobile' in resp.url:
+        return True
+
+
 
 # @timeout(200)
 # @timeout_decorator
@@ -71,6 +80,12 @@ def get_page(url, user_verify=True, need_login=True):
             else:
                 resp = requests.get(url, headers=headers, timeout=time_out, verify=False)
 
+            if check_account_block(resp):
+                crawler.warning('账号{}已经被冻结'.format(name_cookies[0]))
+                freeze_account(name_cookies[0], 0)
+                Cookies.delete_cookies(name_cookies[0])
+                count += 1
+                continue
             page = resp.text
             if page:
                 page = page.encode('utf-8', 'ignore').decode('utf-8')
@@ -81,21 +96,6 @@ def get_page(url, user_verify=True, need_login=True):
             time.sleep(interal)
 
             if user_verify:
-                if 'unfreeze' in resp.url or 'accessdeny' in resp.url or 'userblock' in resp.url or is_403(page):
-                    crawler.warning('账号{}已经被冻结'.format(name_cookies[0]))
-                    freeze_account(name_cookies[0], 0)
-                    Cookies.delete_cookies(name_cookies[0])
-                    count += 1
-                    continue
-
-                if 'verifybmobile' in resp.url:
-                    crawler.warning('账号{}功能被锁定，需要手机解锁'.format(name_cookies[0]))
-                    # 功能锁定,可能是优先级较高的任务无法执行或者账号被封，建议login_info表增加一个账号质量的字段
-                    freeze_account(name_cookies[0], -1)
-                    Cookies.delete_cookies(name_cookies[0])
-                    count += 1
-                    continue
-
                 if not is_complete(page):
                     count += 1
                     continue
