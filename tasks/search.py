@@ -1,7 +1,8 @@
 # coding:utf-8
+from datetime import datetime,timedelta
 from urllib import parse as url_parse
 
-from db.models import KeyWords
+from db.models import KeyWords, WeiboData, KeywordsWbdata
 from logger.log import crawler
 from tasks.workers import app
 from page_get.basic import get_page
@@ -18,20 +19,39 @@ time_param = '&timescope=custom:{}'
 limit = get_max_search_page() + 1
 
 
+def build_time_param(endtime):
+    endtime = endtime.split(':')[0].replace(' ', '-')
+    endtime = datetime.strptime(endtime, '%Y-%m-%d-%H')
+
+    endtime = endtime.strftime('%Y-%m-%d-%H')
+    return endtime
+
+
 @app.task(ignore_result=True)
 def search_keyword(keyword, keyword_id):
     cur_page = 1
     encode_keyword = url_parse.quote(keyword)
+
+    db_keyword = db_session.query(KeyWords).filter(KeyWords.id == keyword_id).first()
+    tp = None
+    if db_keyword:
+        if db_keyword.start_time:
+            tt = db_keyword.start_time
+            if db_keyword.end_time:
+                if db_keyword.end_time == 'auto':
+                    end_time = db_session.query(WeiboData).filter(KeywordsWbdata.keyword_id == keyword_id).filter(
+                        KeywordsWbdata.wb_id == WeiboData.weibo_id).order_by(WeiboData.create_time).first()
+                    if end_time:
+                        end_time = end_time.create_time
+                        end_time = build_time_param(end_time)
+                        tt += ':' + end_time
+                else:
+                    tt += ':' + db_keyword.end_time
+            tp = time_param.format(tt)
     while cur_page < limit:
         cur_url = url.format(encode_keyword, cur_page)
-        # 检查是否有日期要求
-        db_keyword = db_session.query(KeyWords).filter(KeyWords.id == keyword_id).first()
-        if db_keyword:
-            if db_keyword.start_time:
-                tt = db_keyword.start_time
-                if db_keyword.end_time:
-                    tt += ':' + db_keyword.end_time
-                cur_url += time_param.format(tt)
+        if tp:
+            cur_url += tp
         search_page = get_page(cur_url)
         if not search_page:
             crawler.warning('本次并没获取到关键词{}的相关微博,该页面源码是{}'.format(keyword, search_page))

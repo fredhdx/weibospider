@@ -57,7 +57,7 @@ def crawl_repost_page(mid, uid):
 @app.task(ignore_result=True)
 def excute_repost_task():
     # 以当前微博为源微博进行分析，不向上溯源，如果有同学需要向上溯源，需要自己判断一下该微博是否是根微博
-    weibo_datas = wb_data.get_weibo_repost_not_full_crawled('法国警察枪杀华人')
+    weibo_datas = wb_data.get_weibo_repost_not_full_crawled('曼彻斯特')
     count = 0
     for weibo_data in weibo_datas:
         weibo_data = weibo_data
