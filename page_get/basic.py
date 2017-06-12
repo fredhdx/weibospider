@@ -29,6 +29,9 @@ def check_account_block(resp):
     if 'verifybmobile' in resp.url:
         return True
 
+def handle_pipcode(resp):
+    if 'topnav' in resp.url:
+        print('接受验证')
 
 
 # @timeout(200)
@@ -86,6 +89,7 @@ def get_page(url, user_verify=True, need_login=True):
                 Cookies.delete_cookies(name_cookies[0])
                 count += 1
                 continue
+
             page = resp.text
             if page:
                 page = page.encode('utf-8', 'ignore').decode('utf-8')
