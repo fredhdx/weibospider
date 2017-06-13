@@ -168,7 +168,7 @@ def build_one(keyword, wb, ws):
     for keycomment in db_session.query(WeiboComment).filter(
                     WeiboComment.weibo_id == wb.weibo_id).order_by(
         desc(WeiboComment.like))[:10]:
-        comment_user = db_session.query(User).filter(User.uid == keycomment.user_id).one()
+        comment_user = get_profile(keycomment.user_id)
         ws.write(line_num, keyindex['c昵称{}'.format(i)], comment_user.name)
         ws.write(line_num, keyindex['c粉丝数{}'.format(i)], comment_user.fans_num)
         ws.write(line_num, keyindex['c认证类型{}'.format(i)], comment_user.verify_type)

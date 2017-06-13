@@ -2,4 +2,5 @@
 from tasks import search
 
 if __name__ == '__main__':
-    search.excute_search_task()
+    for i in range(5):
+        search.excute_search_task()

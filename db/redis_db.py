@@ -32,7 +32,7 @@ class Cookies(object):
             if tn:
                 if tn == name:
                     return  # 简单的筛选一下，在节点数和任务执行较快的情况下，并不能保证队列中无重复名字
-        cls.rd_con.lpush('account_queue', name)
+        cls.rd_con.rpush('account_queue', name)
 
     @classmethod
     def fetch_cookies(cls):
