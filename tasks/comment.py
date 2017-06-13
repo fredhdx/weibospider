@@ -33,7 +33,6 @@ def crawl_comment_page(mid):
         return
     wb_data.set_weibo_comment_crawled(mid)
 
-
     limit = conf.get_max_comment_page() + 1
     # 这里为了马上拿到返回结果，采用本地调用的方式
     first_page = crawl_comment_by_page(mid, 1)
@@ -50,9 +49,16 @@ def crawl_comment_page(mid):
 @app.task(ignore_result=True)
 def excute_comment_task():
     # 只解析了根评论，而未对根评论下的评论进行抓取，如果有需要的同学，可以适当做修改
-    weibo_datas = wb_data.get_weibo_comment_not_crawled()
-    crawler.info('本次一共有{}条微博需要抓取评论信息'.format(len(weibo_datas)))
+    keyword = '于欢'
+    weibo_datas = wb_data.get_weibo_comment_not_crawled()#(keyword)
+    print(keyword)
+
+    count = 0
+
     for weibo_data in weibo_datas:
         wb_data.set_weibo_comment_crawled(weibo_data.weibo_id)
         app.send_task('tasks.comment.crawl_comment_page', args=(weibo_data.weibo_id,), queue='comment_crawler',
                       routing_key='comment_info')
+        count += 1
+
+    crawler.info('本次一共有{}条微博需要抓取评论信息'.format(count))

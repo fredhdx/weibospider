@@ -2,7 +2,7 @@
 from sqlalchemy import text
 
 from db.basic_db import db_session
-from db.models import WeiboData, KeywordsWbdata, KeyWords, WeiboRepost
+from db.models import WeiboData, KeywordsWbdata, KeyWords, WeiboRepost, WeiboComment
 from decorators.decorator import db_commit_decorator
 
 
@@ -45,6 +45,21 @@ def set_weibo_comment_crawled(mid):
 
 def get_weibo_comment_not_crawled():
     return db_session.query(WeiboData.weibo_id).filter(text('comment_crawled=0')).all()
+
+
+def get_weibo_comment_not_full_crawled(keyword=None):
+    wbdata = db_session.query(WeiboData)
+    if keyword is not None:
+        wbdata =  db_session.query(WeiboData,KeyWords,KeywordsWbdata)\
+            .filter(KeywordsWbdata.wb_id == WeiboData.weibo_id) \
+            .filter(KeyWords.id == KeywordsWbdata.keyword_id) \
+            .filter(KeyWords.keyword == keyword)
+
+    for wb in wbdata:
+        if wb[0].comment_num > 100:
+            has = db_session.query(WeiboComment).filter(WeiboComment.weibo_id== wb[0].weibo_id).count()
+            if has / wb[0].comment_num < 0.6:
+                yield wb[0]
 
 
 def get_weibo_repost_not_crawled():

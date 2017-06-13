@@ -2,6 +2,7 @@ import sys
 
 sys.path.append('/'.join(sys.path[0].split('/')[:-1]))
 
+from utils.time_parser import time_diff
 from sqlalchemy import desc
 
 from page_get.user import get_profile
@@ -14,6 +15,7 @@ from datetime import datetime
 keys = ['事件名',
         '微博名称',
         '微博属性',
+        '认证信息',
         '粉丝拥有量',
         '微博等级',
         '网址',
@@ -36,25 +38,28 @@ for i, k in enumerate(keys):
     keyindex[k] = i
 
 for i in range(1, 11):
-    count = 6
+    count = 7
     keyindex['昵称{}'.format(i)] = user_start + (i - 1) * count + i
     keyindex['认证类型{}'.format(i)] = user_start + 1 + (i - 1) * count + i
     keyindex['粉丝数{}'.format(i)] = user_start + 2 + (i - 1) * count + i
     keyindex['微博数{}'.format(i)] = user_start + 3 + (i - 1) * count + i
     keyindex['等级{}'.format(i)] = user_start + 4 + (i - 1) * count + i
-    keyindex['转发数{}'.format(i)] = user_start + 5 + (i - 1) * count + i
-    keyindex['转发时间{}'.format(i)] = user_start + 6 + (i - 1) * count + i
+    keyindex['认证信息{}'.format(i)] = user_start + 5 + (i - 1) * count + i
+    keyindex['转发数{}'.format(i)] = user_start + 6 + (i - 1) * count + i
+    keyindex['转发时间{}'.format(i)] = user_start + 7 + (i - 1) * count + i
 
 user_start = len(keyindex)
 for i in range(1, 11):
-    count = 6
+    count = 8
     keyindex['c昵称{}'.format(i)] = user_start + (i - 1) * count + i
     keyindex['c认证类型{}'.format(i)] = user_start + 1 + (i - 1) * count + i
     keyindex['c粉丝数{}'.format(i)] = user_start + 2 + (i - 1) * count + i
     keyindex['c微博数{}'.format(i)] = user_start + 3 + (i - 1) * count + i
     keyindex['c等级{}'.format(i)] = user_start + 4 + (i - 1) * count + i
+    keyindex['c认证信息{}'.format(i)] = user_start + 5 + (i - 1) * count + i
+    keyindex['c评论时间{}'.format(i)] = user_start + 6 + (i - 1) * count + i
     # keyindex['次级评论数{}'.format(i)] = user_start + 5 + (i - 1) * count + i
-    keyindex['c点赞数{}'.format(i)] = user_start + 5 + (i - 1) * count + i
+    keyindex['c点赞数{}'.format(i)] = user_start + 7 + (i - 1) * count + i
 
 
 def build_init_sheet(ws):
@@ -72,14 +77,6 @@ def get_repost_user_count(wbid, verify_type):
 def get_repost_lv_count(wbid, lv):
     db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wbid).filter(
         WeiboRepost.lv == lv).count()
-
-
-def time_difference(last, before):
-    last = datetime.strptime(last, '%Y-%m-%d %H:%M')
-    before = datetime.strptime(before, '%Y-%m-%d %H:%M')
-    diff = (last - before).seconds
-    diff //= 60
-    return str(diff) + '分'
 
 
 def get_repost_count_by_user(wbid, user_id):
@@ -136,6 +133,8 @@ def build_one(keyword, wb, ws):
     ws.write(line_num, keyindex['网址'], wb.weibo_url)
     ws.write(line_num, keyindex['发布时间'], wb.create_time)
     ws.write(line_num, keyindex['微博属性'], user.verify_type)
+    ws.write(line_num, keyindex['微博等级'], user.level)
+    ws.write(line_num, keyindex['认证信息'], user.verify_info)
     ws.write(line_num, keyindex['点赞数'], wb.praise_num)
     ws.write(line_num, keyindex['评论数'], wb.comment_num)
 
@@ -160,8 +159,9 @@ def build_one(keyword, wb, ws):
         ws.write(line_num, keyindex['认证类型{}'.format(i)], repost_user.verify_type)
         ws.write(line_num, keyindex['微博数{}'.format(i)], repost_user.wb_num)
         ws.write(line_num, keyindex['等级{}'.format(i)], repost_user.level)
+        ws.write(line_num, keyindex['认证信息{}'.format(i)], repost_user.verify_info)
         ws.write(line_num, keyindex['转发数{}'.format(i)], keyrepost.repost_count)
-        ws.write(line_num, keyindex['转发时间{}'.format(i)], time_difference(keyrepost.repost_time, wb.create_time))
+        ws.write(line_num, keyindex['转发时间{}'.format(i)], time_diff(keyrepost.repost_time, wb.create_time))
         i += 1
 
     i = 1
@@ -174,6 +174,8 @@ def build_one(keyword, wb, ws):
         ws.write(line_num, keyindex['c认证类型{}'.format(i)], comment_user.verify_type)
         ws.write(line_num, keyindex['c微博数{}'.format(i)], comment_user.wb_num)
         ws.write(line_num, keyindex['c等级{}'.format(i)], comment_user.level)
+        ws.write(line_num, keyindex['c认证信息{}'.format(i)], comment_user.verify_info)
+        ws.write(line_num, keyindex['c评论时间{}'.format(i)], time_diff(keycomment.create_time, wb.create_time))
 
         # ws.write(line_num, keyindex['次级评论数{}'.format(i)], keycomment.sub_comment_count)
         ws.write(line_num, keyindex['c点赞数{}'.format(i)], keycomment.like)
