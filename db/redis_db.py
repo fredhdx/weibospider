@@ -64,6 +64,7 @@ class Cookies(object):
             # 修复一个问题，当一个主机开启多个进程且被阻塞后，出现cookies分发混乱
             my_cookies = cls.get_cookies_by_my_hostname()
             if my_cookies:
+                cls.rd_con.lpush('account_queue', name)
                 return my_cookies
 
             if name:
