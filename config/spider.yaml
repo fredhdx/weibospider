@@ -17,7 +17,7 @@ db:
     host: rm-wz9s1ehy4tb6o93c3o.mysql.rds.aliyuncs.com
     port: 3306
     user: zs
-    password: 6097skdz@DDzcbb
+    password: 6097skdz@DD
     db_name: weibo
     db_type: mysql
 
