@@ -94,7 +94,7 @@ def main():
     if len(sys.argv) > 1:
         arg = sys.argv[1]
     else:
-        arg = '乐天 萨德'
+        arg = '曼彻斯特'
     keywords = db_session.query(KeyWords).filter(KeyWords.keyword == arg)
     for keyword in keywords:
         for wbid in db_session.query(KeywordsWbdata.wb_id).filter(KeywordsWbdata.keyword_id == keyword.id):

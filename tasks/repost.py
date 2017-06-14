@@ -57,12 +57,13 @@ def crawl_repost_page(mid, uid):
 @app.task(ignore_result=True)
 def excute_repost_task():
     # 以当前微博为源微博进行分析，不向上溯源，如果有同学需要向上溯源，需要自己判断一下该微博是否是根微博
-    keyword = '太伏中学'
-    weibo_datas = wb_data.get_weibo_repost_not_crawled()
+    keyword = None
+    weibo_datas = wb_data.get_weibo_repost_not_full_crawled(keyword)
     print(keyword)
     count = 0
     for weibo_data in weibo_datas:
         weibo_data = weibo_data
+        print(weibo_data.repost_num)
         app.send_task('tasks.repost.crawl_repost_page', args=(weibo_data.weibo_id, weibo_data.uid),
                       queue='repost_crawler', routing_key='repost_info')
         count += 1

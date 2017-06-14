@@ -35,8 +35,7 @@ class Cookies(object):
         cls.rd_con.rpush('account_queue', name)
 
     @classmethod
-    def fetch_cookies(cls):
-        # cookies记录被使用的主机数目，当超过上限，则将其放至队尾，未超过则获取并记录
+    def get_cookies_by_my_hostname(cls):
         hostname = socket.gethostname()
         # 首先尝试获取本机已经占有的cookies
         my_cookies_name = cls.rd_con.hget('host', hostname)
@@ -46,12 +45,27 @@ class Cookies(object):
                 my_cookies = json.loads(my_cookies.decode('utf-8'))
                 return my_cookies_name, my_cookies['cookies']
             else:
+                cls.rd_con.hdel('host', hostname)
                 cls.delete_cookies(my_cookies_name)
+        return None
+
+    @classmethod
+    def fetch_cookies(cls):
+        # cookies记录被使用的主机数目，当超过上限，则将其放至队尾，未超过则获取并记录
+        hostname = socket.gethostname()
+        my_cookies = cls.get_cookies_by_my_hostname()
+        if my_cookies:
+            return my_cookies
 
         while True:
             # 失败则从队列中 阻塞 获取一个新的cookies (不阻塞在账户少的时候，会出现重复登陆的情况，但是这里阻塞之后，原来实现中的尝试登陆代码就无效了,需要的话可以设置超时解决)
             # 另外阻塞的一个好处是，任务不会在账号出问题的时候被刷没了
             name = cls.rd_con.blpop('account_queue')[1].decode('utf-8')
+            # 修复一个问题，当一个主机开启多个进程且被阻塞后，出现cookies分发混乱
+            my_cookies = cls.get_cookies_by_my_hostname()
+            if my_cookies:
+                return my_cookies
+
             if name:
                 j_account = cls.rd_con.hget('account', name)
 

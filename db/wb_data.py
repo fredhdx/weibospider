@@ -54,12 +54,13 @@ def get_weibo_comment_not_full_crawled(keyword=None):
             .filter(KeywordsWbdata.wb_id == WeiboData.weibo_id) \
             .filter(KeyWords.id == KeywordsWbdata.keyword_id) \
             .filter(KeyWords.keyword == keyword)
-
+    else:
+        wbdata = db_session.query(WeiboData)
     for wb in wbdata:
-        if wb[0].comment_num > 100:
-            has = db_session.query(WeiboComment).filter(WeiboComment.weibo_id== wb[0].weibo_id).count()
-            if has / wb[0].comment_num < 0.6:
-                yield wb[0]
+        if wb.comment_num > 100:
+            has = db_session.query(WeiboComment).filter(WeiboComment.weibo_id== wb.weibo_id).count()
+            if has / wb.comment_num < 0.6:
+                yield wb
 
 
 def get_weibo_repost_not_crawled():
@@ -73,13 +74,14 @@ def get_weibo_repost_not_full_crawled(keyword=None):
             .filter(KeywordsWbdata.wb_id == WeiboData.weibo_id) \
             .filter(KeyWords.id == KeywordsWbdata.keyword_id) \
             .filter(KeyWords.keyword == keyword)
-
+    else:
+        wbdata = db_session.query(WeiboData)
 
     for wb in wbdata:
-        if wb[0].repost_num > 100:
-            has = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb[0].weibo_id).count()
-            if has / wb[0].repost_num < 0.6:
-                yield wb[0]
+        if wb.repost_num > 100:
+            has = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb.weibo_id).count()
+            if has / wb.repost_num < 0.6:
+                yield wb
 
 
 @db_commit_decorator

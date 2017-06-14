@@ -49,13 +49,14 @@ def crawl_comment_page(mid):
 @app.task(ignore_result=True)
 def excute_comment_task():
     # 只解析了根评论，而未对根评论下的评论进行抓取，如果有需要的同学，可以适当做修改
-    keyword = '于欢'
-    weibo_datas = wb_data.get_weibo_comment_not_crawled()#(keyword)
+    keyword = None
+    weibo_datas = wb_data.get_weibo_comment_not_full_crawled(keyword)
     print(keyword)
 
     count = 0
 
     for weibo_data in weibo_datas:
+        print(weibo_data.comment_num)
         wb_data.set_weibo_comment_crawled(weibo_data.weibo_id)
         app.send_task('tasks.comment.crawl_comment_page', args=(weibo_data.weibo_id,), queue='comment_crawler',
                       routing_key='comment_info')

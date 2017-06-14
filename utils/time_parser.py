@@ -21,7 +21,7 @@ def parse_time(s_time):
     return create_time
 
 
-def time_diff(s_time, e_time):
+def time_diff(e_time, s_time):
     last = parse_time(e_time)
     before = parse_time(s_time)
     diff = (last - before).seconds
