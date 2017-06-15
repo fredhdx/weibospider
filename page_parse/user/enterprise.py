@@ -73,7 +73,7 @@ def get_detail_html(html):
     cont = ''
     for script in scripts:
         m = pattern.search(script.string)
-        if m and 'pl.content.homeFeed.index' in script.string and '简介' in script.string:
+        if m and 'pl.content.homeFeed.index' in script.string and ('行业类别' in script.string or '简介' in script.string):
             all_info = m.group(1)
             cont = json.loads(all_info)['html']
     return cont
