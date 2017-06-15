@@ -55,16 +55,8 @@ def get_status(html):
 
 @parse_decorator(1)
 def get_description(html):
-    soup = BeautifulSoup(html, "html.parser")
-    scripts = soup.find_all('script')
-    pattern = re.compile(r'FM.view\((.*)\)')
-    cont = ''
     description = ''
-    for script in scripts:
-        m = pattern.search(script.string)
-        if m and 'pl.content.homeFeed.index' in script.string and '简介' in script.string:
-            all_info = m.group(1)
-            cont = json.loads(all_info)['html']
+    cont = get_detail_html(html)
     if cont != '':
         soup = BeautifulSoup(cont, 'html.parser')
         detail = soup.find(attrs={'class': 'ul_detail'}).find_all(attrs={'class': 'item S_line2 clearfix'})
@@ -74,3 +66,26 @@ def get_description(html):
     return description
 
 
+def get_detail_html(html):
+    soup = BeautifulSoup(html, "html.parser")
+    scripts = soup.find_all('script')
+    pattern = re.compile(r'FM.view\((.*)\)')
+    cont = ''
+    for script in scripts:
+        m = pattern.search(script.string)
+        if m and 'pl.content.homeFeed.index' in script.string and '简介' in script.string:
+            all_info = m.group(1)
+            cont = json.loads(all_info)['html']
+    return cont
+
+
+def get_sectors(html):
+    cont = get_detail_html(html)
+    sectors = ''
+    if cont:
+        soup = BeautifulSoup(cont, "html.parser")
+        detail = soup.find(attrs={'class': 'ul_detail'}).find_all(attrs={'class': 'item S_line2 clearfix'})
+        for li in detail:
+            if '行业类别' in li.get_text():
+                sectors = li.find_all('span')[1].get_text().replace('\r\n', '').strip()[4:].strip()
+    return sectors

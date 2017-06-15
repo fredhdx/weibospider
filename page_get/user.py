@@ -29,6 +29,7 @@ def get_enterprise_detail(user_id, html):
     user.fans_num = enterprise.get_fans(html)
     user.wb_num = enterprise.get_status(html)
     user.description = enterprise.get_description(html).encode('gbk', 'ignore').decode('gbk')
+    user.sectors = enterprise.get_sectors(html)
     return user
 
 

@@ -1,4 +1,6 @@
 # coding:utf-8
+from db.basic_db import db_session
+from db.models import User
 from db.user import get_user_by_uid
 from tasks.workers import app
 from page_get import user as user_get
@@ -62,29 +64,10 @@ def excute_user_task():
 
 @app.task(ignore_result=True)
 def excute_user_profile_task():
-    from db.weibo_repost import get_repost_uid
-    seeds = get_repost_uid()
     count = 0
-    if seeds:
-        for seed in seeds:
-            if not get_user_by_uid(seed):
-                app.send_task('tasks.user.crawl_person_profile_infos', args=(seed,), queue='user_profile_crawler',
-                              routing_key='or_user_profile_info')
-                count += 1
-    from db.wb_data import get_wbdata_uid
-    seeds = get_wbdata_uid()
-    if seeds:
-        for seed in seeds:
-            if not get_user_by_uid(seed):
-                app.send_task('tasks.user.crawl_person_profile_infos', args=(seed,), queue='user_profile_crawler',
-                              routing_key='or_user_profile_info')
-                count += 1
-    from db.weibo_comment import get_comment_uid
-    seeds = get_comment_uid()
-    if seeds:
-        for seed in seeds:
-            if not get_user_by_uid(seed):
-                app.send_task('tasks.user.crawl_person_profile_infos', args=(seed,), queue='user_profile_crawler',
-                              routing_key='or_user_profile_info')
-                count += 1
-    print('总共有{}个用户数据需要爬取'.format(count))
+    for u in db_session.query(User).filter(User.verify_type >= 2):
+        app.send_task('tasks.user.crawl_person_profile_infos', args=(u.uid,), queue='user_profile_crawler',
+                      routing_key='or_user_profile_info')
+        count += 1
+        if count % 10 == 0:
+            print(count)

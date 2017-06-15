@@ -22,6 +22,7 @@ class User(Base):
     uid = Column(String, unique=True)
     name = Column(String(200), default='')
     gender = Column(INTEGER, default=0)
+    sectors = Column(String(200), default='')
     birthday = Column(String(200), default='')
     location = Column(String(100), default='')
     description = Column(String(500), default='')
@@ -96,7 +97,7 @@ class WeiboComment(Base):
     user_id = Column(String(20))
     create_time = Column(String(200))
     like = Column(INTEGER, default=0)
-    sub_comment_count = Column(INTEGER,default=0)
+    sub_comment_count = Column(INTEGER, default=0)
 
     def __repr__(self):
         return 'weibo_id:{},comment_id:{},comment_cont:{}'.format(self.weibo_id, self.comment_id, self.comment_cont)

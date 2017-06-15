@@ -16,5 +16,6 @@ def save_user(user):
     db_session.commit()
 
 
+@db_commit_decorator
 def get_user_by_uid(uid):
     return db_session.query(User).filter(User.uid == uid).first()
