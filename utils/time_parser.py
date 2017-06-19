@@ -26,4 +26,4 @@ def time_diff(e_time, s_time):
     before = parse_time(s_time)
     diff = (last - before).seconds
     diff //= 60
-    return str(diff) + '分'
+    return str(diff)

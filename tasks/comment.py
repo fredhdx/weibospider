@@ -29,8 +29,8 @@ def crawl_comment_by_page(mid, page_num):
 
 @app.task(ignore_result=True)
 def crawl_comment_page(mid):
-    if wb_data.check_weibo_comment_crawled(mid):
-        return
+    # if wb_data.check_weibo_comment_crawled(mid):
+    #     return
     wb_data.set_weibo_comment_crawled(mid)
 
     limit = conf.get_max_comment_page() + 1

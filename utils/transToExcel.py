@@ -10,6 +10,7 @@ from page_get.user import get_profile
 from db.basic_db import db_session
 from db.models import WeiboData, KeyWords, KeywordsWbdata, User, WeiboRepost, WeiboComment
 import xlwt
+from sqlalchemy import or_
 from datetime import datetime
 
 keys = ['事件名',
@@ -33,7 +34,7 @@ keys = ['事件名',
         '机构认证占比',
         ]
 keyindex = {}
-user_start = len(keys)
+user_start = len(keys) - 1
 for i, k in enumerate(keys):
     keyindex[k] = i
 
@@ -48,9 +49,9 @@ for i in range(1, 11):
     keyindex['转发数{}'.format(i)] = user_start + 6 + (i - 1) * count + i
     keyindex['转发时间{}'.format(i)] = user_start + 7 + (i - 1) * count + i
 
-user_start = len(keyindex)
+user_start = len(keyindex) - 1
 for i in range(1, 11):
-    count = 8
+    count = 7
     keyindex['c昵称{}'.format(i)] = user_start + (i - 1) * count + i
     keyindex['c认证类型{}'.format(i)] = user_start + 1 + (i - 1) * count + i
     keyindex['c粉丝数{}'.format(i)] = user_start + 2 + (i - 1) * count + i
@@ -94,12 +95,14 @@ def main():
     if len(sys.argv) > 1:
         arg = sys.argv[1]
     else:
-        arg = '曼彻斯特'
-    keywords = db_session.query(KeyWords).filter(KeyWords.keyword == arg)
-    for keyword in keywords:
+        arg = '太伏中学'
+    keyword = db_session.query(KeyWords).filter(KeyWords.keyword == arg).first()
+    if keyword:
+        query = db_session.query(WeiboData).filter(
+            or_(WeiboData.repost_num >= 500, WeiboData.comment_num >= 500, WeiboData.praise_num >= 500))
         for wbid in db_session.query(KeywordsWbdata.wb_id).filter(KeywordsWbdata.keyword_id == keyword.id):
-            for wb in db_session.query(WeiboData).filter(WeiboData.weibo_id == wbid[0]).filter(
-                            WeiboData.repost_num > 100):
+            wb = query.filter(WeiboData.weibo_id == wbid[0]).first()
+            if wb:
                 build_one(keyword, wb, ws)
     workbook.save('result.xls')
 
@@ -121,9 +124,6 @@ def build_one(keyword, wb, ws):
     lv1 = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb.weibo_id).filter(
         WeiboRepost.lv == 0).count()
     all_repost = lv1 + lv2 + lv3 + lv4 + lv5
-    if all_repost < 100:
-        return all_repost
-        # continue
     global line_num
     line_num += 1
     print('{}行开始统计'.format(line_num))
@@ -144,10 +144,10 @@ def build_one(keyword, wb, ws):
     ws.write(line_num, keyindex['第三层转发'], percent(lv3, all_repost))
     ws.write(line_num, keyindex['第四层转发'], percent(lv4, all_repost))
     ws.write(line_num, keyindex['四层以上转发'], percent(lv5, all_repost))
-    ws.write(line_num, keyindex['转发数'], all_repost)
-    ws.write(line_num, keyindex['普通用户数量'], get_repost_user_count(wb.weibo_id, 0))
-    ws.write(line_num, keyindex['个人认证占比'], get_repost_user_count(wb.weibo_id, 1))
-    ws.write(line_num, keyindex['机构认证占比'], get_repost_user_count(wb.weibo_id, 2))
+    ws.write(line_num, keyindex['转发数'], wb.repost_num)
+    ws.write(line_num, keyindex['普通用户数量'], get_repost_user_count(wb.weibo_id, 0)/all_repost*100 if all_repost>0 else 0)
+    ws.write(line_num, keyindex['个人认证占比'], get_repost_user_count(wb.weibo_id, 1)/all_repost*100 if all_repost>0 else 0)
+    ws.write(line_num, keyindex['机构认证占比'], get_repost_user_count(wb.weibo_id, 2)/all_repost*100 if all_repost>0 else 0)
     i = 1
     for keyrepost in db_session.query(WeiboRepost).filter(
                     WeiboRepost.root_weibo_id == wb.weibo_id).order_by(
@@ -156,7 +156,10 @@ def build_one(keyword, wb, ws):
 
         ws.write(line_num, keyindex['昵称{}'.format(i)], repost_user.name)
         ws.write(line_num, keyindex['粉丝数{}'.format(i)], repost_user.fans_num)
-        ws.write(line_num, keyindex['认证类型{}'.format(i)], repost_user.verify_type)
+        if repost_user.uid == wb.uid:
+            ws.write(line_num, keyindex['认证类型{}'.format(i)], 11)
+        else:
+            ws.write(line_num, keyindex['认证类型{}'.format(i)], repost_user.verify_type)
         ws.write(line_num, keyindex['微博数{}'.format(i)], repost_user.wb_num)
         ws.write(line_num, keyindex['等级{}'.format(i)], repost_user.level)
         ws.write(line_num, keyindex['认证信息{}'.format(i)], repost_user.verify_info)
@@ -171,7 +174,10 @@ def build_one(keyword, wb, ws):
         comment_user = get_profile(keycomment.user_id)
         ws.write(line_num, keyindex['c昵称{}'.format(i)], comment_user.name)
         ws.write(line_num, keyindex['c粉丝数{}'.format(i)], comment_user.fans_num)
-        ws.write(line_num, keyindex['c认证类型{}'.format(i)], comment_user.verify_type)
+        if comment_user.uid == wb.uid:
+            ws.write(line_num, keyindex['c认证类型{}'.format(i)], 11)
+        else:
+            ws.write(line_num, keyindex['c认证类型{}'.format(i)], comment_user.verify_type)
         ws.write(line_num, keyindex['c微博数{}'.format(i)], comment_user.wb_num)
         ws.write(line_num, keyindex['c等级{}'.format(i)], comment_user.level)
         ws.write(line_num, keyindex['c认证信息{}'.format(i)], comment_user.verify_info)

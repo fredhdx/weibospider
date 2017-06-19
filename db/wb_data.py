@@ -50,15 +50,15 @@ def get_weibo_comment_not_crawled():
 def get_weibo_comment_not_full_crawled(keyword=None):
     wbdata = db_session.query(WeiboData)
     if keyword is not None:
-        wbdata =  db_session.query(WeiboData,KeyWords,KeywordsWbdata)\
+        wbdata = db_session.query(WeiboData) \
             .filter(KeywordsWbdata.wb_id == WeiboData.weibo_id) \
             .filter(KeyWords.id == KeywordsWbdata.keyword_id) \
             .filter(KeyWords.keyword == keyword)
     else:
         wbdata = db_session.query(WeiboData)
     for wb in wbdata:
-        if wb.comment_num > 100:
-            has = db_session.query(WeiboComment).filter(WeiboComment.weibo_id== wb.weibo_id).count()
+        if wb.comment_num > 0:
+            has = db_session.query(WeiboComment).filter(WeiboComment.weibo_id == wb.weibo_id).count()
             if has / wb.comment_num < 0.6:
                 yield wb
 
@@ -70,7 +70,7 @@ def get_weibo_repost_not_crawled():
 def get_weibo_repost_not_full_crawled(keyword=None):
     wbdata = db_session.query(WeiboData)
     if keyword is not None:
-        wbdata =  db_session.query(WeiboData,KeyWords,KeywordsWbdata)\
+        wbdata = db_session.query(WeiboData) \
             .filter(KeywordsWbdata.wb_id == WeiboData.weibo_id) \
             .filter(KeyWords.id == KeywordsWbdata.keyword_id) \
             .filter(KeyWords.keyword == keyword)
@@ -78,7 +78,7 @@ def get_weibo_repost_not_full_crawled(keyword=None):
         wbdata = db_session.query(WeiboData)
 
     for wb in wbdata:
-        if wb.repost_num > 100:
+        if wb.repost_num > 1:
             has = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb.weibo_id).count()
             if has / wb.repost_num < 0.6:
                 yield wb
@@ -105,6 +105,7 @@ def check_weibo_repost_crawled(mid):
 def check_weibo_comment_crawled(mid):
     wbdt = db_session.query(WeiboData).filter(WeiboData.weibo_id == mid).one()
     return wbdt.comment_crawled == '1'
+
 
 def get_wbdata_uid():
     return db_session.query(WeiboData.uid)

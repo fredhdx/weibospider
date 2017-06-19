@@ -33,7 +33,7 @@ def crawl_person_infos(uid):
     # 由于与别的任务共享数据表，所以需要先判断数据库是否有该用户信息，再进行抓取
     user = user_get.get_profile(uid)
     # 不抓取企业号
-    if user.verify_type == 2:
+    if user.verify_type >= 2:
         set_seed_other_crawled(uid)
         return
 
