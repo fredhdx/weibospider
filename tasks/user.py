@@ -64,11 +64,9 @@ def excute_user_task():
 
 @app.task(ignore_result=True)
 def excute_user_profile_task():
-    count = 0
-    for u in db_session.query(User).filter(User.verify_type >= 2).filter(User.sectors == ''):
-        app.send_task('tasks.user.crawl_person_profile_infos', args=(u.uid,), queue='user_profile_crawler',
+    seeds = get_seed_ids()
+    if seeds:
+        for seed in seeds:
+            app.send_task('tasks.user.crawl_person_profile_infos', args=(seed.uid,), queue='user_profile_crawler',
                       routing_key='or_user_profile_info')
-        count += 1
-        if count % 10 == 0:
-            print(count)
 

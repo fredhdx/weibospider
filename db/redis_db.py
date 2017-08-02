@@ -52,6 +52,7 @@ class Cookies(object):
     @classmethod
     def fetch_cookies(cls):
         # cookies记录被使用的主机数目，当超过上限，则将其放至队尾，未超过则获取并记录
+        # TODO : 更新方案， queue里面重复添加账号
         hostname = socket.gethostname()
         my_cookies = cls.get_cookies_by_my_hostname()
         if my_cookies:

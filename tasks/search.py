@@ -53,7 +53,7 @@ def search_keyword(keyword, keyword_id):
         if tp:
             cur_url += tp
         search_page = get_page(cur_url)
-        time.sleep(15)
+        time.sleep(25)
         if not search_page:
             crawler.warning('本次并没获取到关键词{}的相关微博,该页面源码是{}'.format(keyword, search_page))
             return

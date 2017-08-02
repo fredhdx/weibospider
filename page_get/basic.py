@@ -28,6 +28,7 @@ def check_account_block(resp):
 
     if 'verifybmobile' in resp.url:
         return True
+    return is_403(resp.text)
 
 def handle_pipcode(resp):
     if 'topnav' in resp.url:

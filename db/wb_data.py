@@ -2,7 +2,7 @@
 from sqlalchemy import text
 
 from db.basic_db import db_session
-from db.models import WeiboData, KeywordsWbdata, KeyWords, WeiboRepost, WeiboComment
+from db.models import WeiboData, KeywordsWbdata, KeyWords, WeiboRepost, WeiboComment, User
 from decorators.decorator import db_commit_decorator
 
 
@@ -44,7 +44,7 @@ def set_weibo_comment_crawled(mid):
 
 
 def get_weibo_comment_not_crawled():
-    return db_session.query(WeiboData.weibo_id).filter(text('comment_crawled=0')).all()
+    return db_session.query(WeiboData).filter(text('comment_crawled=0')).all()
 
 
 def get_weibo_comment_not_full_crawled(keyword=None):
@@ -64,7 +64,7 @@ def get_weibo_comment_not_full_crawled(keyword=None):
 
 
 def get_weibo_repost_not_crawled():
-    return db_session.query(WeiboData.weibo_id, WeiboData.uid).filter(text('repost_crawled=0')).all()
+    return db_session.query(WeiboData).filter(text('repost_crawled=0')).all()
 
 
 def get_weibo_repost_not_full_crawled(keyword=None):
@@ -82,6 +82,15 @@ def get_weibo_repost_not_full_crawled(keyword=None):
             has = db_session.query(WeiboRepost).filter(WeiboRepost.root_weibo_id == wb.weibo_id).count()
             if has / wb.repost_num < 0.6:
                 yield wb
+
+def get_weibo_from_user(name):
+    user = db_session.query(User).filter(User.name ==name).first()
+    if user:
+        wbdata = db_session.query(WeiboData).filter(WeiboData.uid==user.uid)
+        for wb in wbdata:
+            yield wb
+
+
 
 
 @db_commit_decorator

@@ -1,6 +1,12 @@
 # -*-coding:utf-8 -*-
 #  获取用户资料
+import json
+from urllib.parse import quote
 
+import re
+import requests
+
+from db.basic_db import db_session
 from db.models import User
 from db.seed_ids import set_seed_crawled
 from db.user import save_user, get_user_by_uid
@@ -98,8 +104,6 @@ def get_profile(user_id):
     return user
 
 
-
-
 def get_fans_or_followers_ids(user_id, crawl_type):
     """
     获取用户的粉丝和关注用户
@@ -129,3 +133,26 @@ def get_fans_or_followers_ids(user_id, crawl_type):
         cur_page += 1
 
     return user_ids
+
+
+def get_uid_by_name(user_name):
+    """通过用户名获取用户信息"""
+    user = db_session.query(User).filter(User.name == user_name).first()
+    if user:
+        return user.uid
+    url = "http://s.weibo.com/ajax/topsuggest.php?key={}&_k=14995588919022710&uid=&_t=1&_v=STK_14995588919022711"
+    url = url.format(quote(user_name))
+    info = requests.get(url).content.decode()
+
+    pattern = r'try\{.*\((.*)\).*\}catch.*'
+    pattern = re.compile(pattern)
+    info = pattern.match(info).groups()[0]
+    info = json.loads(info)
+    try:
+        return info["data"]["user"][0]['u_id']
+    except Exception as e:
+        print(e)
+        return None
+
+if __name__ == "__main__":
+    get_uid_by_name("瓯海新闻")
